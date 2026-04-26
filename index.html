@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorTrack</title>
+<meta name="description" content="Track tutor sessions, payments and invoices">
+<meta name="theme-color" id="theme-color-meta" content="#7c6dfa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TutorTrack">
+<link rel="manifest" href="manifest.json">
+
+<style>
+/* ─── RESET ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ─── SYSTEM FONTS — work offline, no stretching ─── */
+:root{
+  --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Fira Code", "Consolas", "Courier New", monospace;
+  --accent:#7c6dfa;
+  --accent-dim:#ede9fe;
+  --green:#059669;
+  --green-dim:#d1fae5;
+  --amber:#d97706;
+  --amber-dim:#fef3c7;
+  --red:#dc2626;
+  --red-dim:#fee2e2;
+  --bg:#f5f4fb;
+  --surface:#ffffff;
+  --surface2:#f0effe;
+  --border:#e4e1f5;
+  --text:#1a1728;
+  --text2:#4a4568;
+  --muted:#9290a8;
+  --header-bg:#7c6dfa;
+  --header-text:#ffffff;
+  --nav-bg:#ffffff;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(124,109,250,0.10);
+  --radius:16px;
+  --radius-sm:10px;
+  --tap:48px;
+}
+[data-theme="dark"]{
+  --bg:#0d0c18;
+  --surface:#17152a;
+  --surface2:#1e1b34;
+  --border:#2b2845;
+  --text:#edeaf8;
+  --text2:#9e9bbf;
+  --muted:#5c5a7a;
+  --header-bg:#1e1b34;
+  --header-text:#edeaf8;
+  --nav-bg:#17152a;
+  --accent-dim:#2d2660;
+  --green-dim:#052e16;
+  --amber-dim:#431407;
+  --red-dim:#450a0a;
+  --shadow:0 1px 3px rgba(0,0,0,0.3),0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ─── BASE ─── */
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font-main);-webkit-tap-highlight-color:transparent;transition:background .3s,color .3s}
+
+/* ─── LAYOUT ─── */
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* ─── HEADER ─── */
+#header{
+  background:var(--header-bg);color:var(--header-text);
+  padding:0;position:sticky;top:0;z-index:50;
+  box-shadow:0 2px 12px rgba(124,109,250,0.25);
+}
+[data-theme="dark"] #header{box-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.inner{max-width:900px;margin:0 auto;padding:0 20px}
+.header-inner{max-width:900px;margin:0 auto;padding:20px 20px 0}
+.app-title{font-size:22px;font-weight:800;letter-spacing:-0.5px}
+.app-subtitle{font-size:12px;opacity:0.75;font-weight:400;margin-top:1px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.hdr-btn{
+  background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);
+  border-radius:12px;padding:10px 14px;color:white;cursor:pointer;
+  font-size:18px;line-height:1;transition:all .2s;min-width:var(--tap);min-height:var(--tap);
+  display:flex;align-items:center;justify-content:center;
+}
+.hdr-btn:active{transform:scale(0.93);background:rgba(255,255,255,0.25)}
+
+/* ─── TABS ─── */
+.tabs{display:flex;gap:0;padding:0 4px}
+.tab-btn{
+  flex:1;background:none;border:none;cursor:pointer;padding:14px 8px 12px;
+  font-family:var(--font-main);font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);
+  border-bottom:3px solid transparent;transition:all .18s;letter-spacing:0.02em;
+  min-height:var(--tap);
+}
+.tab-btn.active{color:#fff;border-bottom-color:#fff}
+.tab-btn:active{background:rgba(255,255,255,0.08)}
+
+/* ─── MAIN CONTENT ─── */
+#main{flex:1;background:var(--bg)}
+
+/* ─── TAB PANELS ─── */
+.panel{display:none}.panel.active{display:block}
+
+/* ─── SECTION HEADER ─── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-size:17px;font-weight:800;color:var(--text)}
+.sec-sub{font-size:12px;color:var(--muted);margin-top:1px}
+
+/* ─── CARDS ─── */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;margin-bottom:12px;
+  box-shadow:var(--shadow);transition:border-color .15s;
+}
+.card:active{border-color:var(--accent)}
+
+/* ─── STATS GRID ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-box{background:var(--surface2);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;border:1px solid var(--border)}
+.stat-num{font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted)}
+
+/* ─── BALANCE PILL ─── */
+.balance-pill{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--amber-dim);border-radius:var(--radius-sm);
+  padding:10px 14px;margin-top:8px;
+}
+.balance-label{font-size:12px;font-weight:700;color:var(--amber)}
+.balance-val{font-size:15px;font-weight:800;color:var(--amber);font-family:var(--font-mono)}
+
+/* ─── CALENDAR ─── */
+.cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.cal-header{background:var(--surface2);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.cal-month-title{font-size:15px;font-weight:800}
+.cal-nav-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:16px;min-width:var(--tap);min-height:var(--tap);display:flex;align-items:center;justify-content:center;color:var(--text);transition:all .15s}
+.cal-nav-btn:active{background:var(--accent);color:white;border-color:var(--accent)}
+.cal-body{padding:12px}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+.cal-dow-cell{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:6px 0;text-transform:uppercase;letter-spacing:0.04em}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day{
+  aspect-ratio:1;border-radius:10px;border:1.5px solid transparent;
+  background:none;cursor:pointer;font-family:var(--font-main);font-size:14px;
+  font-weight:600;color:var(--text);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;transition:all .12s;
+  min-height:44px;position:relative;
+}
+.cal-day:active{transform:scale(0.92)}
+.cal-day.today{border-color:var(--accent);color:var(--accent);font-weight:800}
+.cal-day.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cal-day.has-dot::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.cal-day.selected.has-dot::after{background:rgba(255,255,255,0.7)}
+.cal-footer{padding:12px 12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between}
+.cal-selected-date{font-size:13px;font-weight:700;color:var(--text2)}
+
+/* ─── SESSION LIST ─── */
+.session-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;
+  justify-content:space-between;gap:12px;box-shadow:var(--shadow);
+}
+.session-name{font-weight:700;font-size:15px;margin-bottom:3px}
+.session-meta{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:0.04em;white-space:nowrap}
+.badge-paid{background:var(--green-dim);color:var(--green)}
+.badge-unpaid{background:var(--amber-dim);color:var(--amber)}
+
+/* ─── FORM ELEMENTS ─── */
+.field{margin-bottom:14px}
+.field-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px}
+.field-input{
+  width:100%;background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:13px 14px;font-family:var(--font-main);
+  font-size:15px;color:var(--text);outline:none;transition:border-color .15s;
+  min-height:var(--tap);
+}
+.field-input:focus{border-color:var(--accent)}
+.field-input::placeholder{color:var(--muted)}
+.fields-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ─── BUTTONS ─── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;border-radius:var(--radius-sm);padding:13px 20px;
+  font-family:var(--font-main);font-size:14px;font-weight:700;cursor:pointer;
+  transition:all .15s;min-height:var(--tap);letter-spacing:0.02em;
+}
+.btn:active{transform:scale(0.96)}
+.btn-primary{background:var(--accent);color:#fff;width:100%}
+.btn-primary:active{background:#6356d4}
+.btn-outline{background:var(--surface);color:var(--text);border:1.5px solid var(--border);width:100%}
+.btn-outline:active{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:none}
+.btn-sm{padding:9px 14px;font-size:13px;min-height:38px}
+.btn-icon{
+  background:none;border:none;cursor:pointer;padding:10px;border-radius:10px;
+  color:var(--muted);font-size:18px;line-height:1;transition:all .15s;
+  min-width:var(--tap);min-height:var(--tap);display:flex;align-items:center;justify-content:center;
+}
+.btn-icon:active{background:var(--border)}
+
+/* ─── TWO-COL LAYOUT FOR TABLET ─── */
+@media(min-width:640px){
+  #main{padding:24px 24px 100px}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  .three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .fields-row-3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+}
+
+/* ─── MODAL ─── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media(min-width:600px){.modal-bg{align-items:center;padding:16px}}
+.modal-sheet{
+  background:var(--surface);border-radius:24px 24px 0 0;
+  width:100%;max-height:92vh;overflow-y:auto;
+  padding:20px 20px 32px;animation:slideUp .22s ease;
+}
+@media(min-width:600px){
+  .modal-sheet{border-radius:20px;max-width:560px;max-height:88vh;padding:28px}
+}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+@media(min-width:600px){.modal-handle{display:none}}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:20px}
+.modal-footer{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+
+/* ─── NOTIF TOAST ─── */
+#toast{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  background:var(--text);color:var(--surface);border-radius:40px;
+  padding:10px 20px;font-size:13px;font-weight:600;white-space:nowrap;
+  z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.25);max-width:90vw;
+}
+#toast.show{opacity:1}
+#toast.ok{background:#059669}
+#toast.warn{background:#d97706}
+
+/* ─── DIVIDER ─── */
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* ─── EMPTY STATE ─── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-text{font-size:14px;font-weight:600}
+
+/* ─── PAYMENT ITEM ─── */
+.pay-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);gap:12px}
+.pay-item:last-child{border-bottom:none}
+
+/* ─── OUTSTANDING ROW ─── */
+.owed-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.owed-row:last-child{border-bottom:none}
+
+/* ─── PRINT / PDF ─── */
+@media print{
+  body{background:#fff!important;color:#000!important;font-family:var(--font-main)}
+  #app,#header,#main,#toast{display:none!important}
+  #print-invoice{display:block!important}
+  .pi-page{width:210mm;min-height:297mm;padding:20mm 18mm;background:#fff;color:#000;font-family:var(--font-main)}
+}
+#print-invoice{display:none}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ═══════ PRINT INVOICE (hidden until print) ═══════ -->
+<div id="print-invoice">
+  <div class="pi-page" id="pi-content"></div>
+</div>
+
+<!-- ═══════ APP ═══════ -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <div class="app-title">📚 TutorTrack</div>
+        <div class="app-subtitle">Sessions · Payments · Invoices</div>
+      </div>
+      <div class="header-actions">
+        <div id="save-badge" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);display:none">✓ Saved</div>
+        <button class="hdr-btn" id="btn-dark" title="Toggle dark mode">🌙</button>
+        <button class="hdr-btn" id="btn-notif" title="Notifications">🔔</button>
+        <button class="hdr-btn" id="btn-wake" title="Keep screen awake">☕</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="calendar">📅 Calendar</button>
+      <button class="tab-btn" data-tab="students">👥 Students</button>
+      <button class="tab-btn" data-tab="payments">💰 Payments</button>
+    </div>
+  </div><!-- /header-inner -->
+  </div><!-- /header -->
+  <div id="main">
+  <div class="inner" style="padding-top:24px;padding-bottom:100px">
+
+    <!-- ── CALENDAR PANEL ── -->
+    <div class="panel active" id="panel-calendar">
+        <!-- Calendar widget -->
+        <div>
+          <div class="cal-wrap">
+            <div class="cal-header">
+              <button class="cal-nav-btn" id="cal-prev">←</button>
+              <div class="cal-month-title" id="cal-title"></div>
+              <button class="cal-nav-btn" id="cal-next">→</button>
+            </div>
+            <div class="cal-body">
+              <div class="cal-dow" id="cal-dow"></div>
+              <div class="cal-days" id="cal-days"></div>
+            </div>
+            <div class="cal-footer">
+              <div class="cal-selected-date" id="cal-sel-label"></div>
+              <button class="btn btn-outline btn-sm" id="btn-today" style="width:auto">Today</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-log-session">＋ Log Session for Selected Date</button>
+        </div>
+
+        <!-- Sessions for selected date -->
+        <div>
+          <div class="sec-header">
+            <div>
+              <div class="sec-title" id="sessions-date-title">Sessions</div>
+              <div class="sec-sub" id="sessions-date-sub"></div>
+            </div>
+          </div>
+          <div id="sessions-list"></div>
+        </div>
+    </div>
+
+    <!-- ── STUDENTS PANEL ── -->
+    <div class="panel" id="panel-students">
+      <div class="sec-header">
+        <div class="sec-title" id="students-title">Students</div>
+        <button class="btn btn-primary btn-sm" style="width:auto" id="btn-add-student">＋ Add Student</button>
+      </div>
+      <div id="student-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px"></div>
+    </div>
+
+    <!-- ── PAYMENTS PANEL ── -->
+    <div class="panel" id="panel-payments">
+      <!-- Record payment form -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="sec-title" style="margin-bottom:16px">Record Payment</div>
+        <div class="field">
+          <label class="field-label">Student</label>
+          <select class="field-input" id="pay-student"></select>
+        </div>
+        <div class="fields-row">
+          <div class="field"><label class="field-label">Amount</label><input type="number" class="field-input" id="pay-amount" placeholder="0.00"></div>
+          <div class="field"><label class="field-label">Date</label><input type="date" class="field-input" id="pay-date"></div>
+        </div>
+        <button class="btn btn-primary" id="btn-add-payment">＋ Record Payment</button>
+      </div>
+
+      <!-- Outstanding -->
+        <div class="card">
+          <div class="sec-title" style="margin-bottom:12px">Outstanding Balances</div>
+          <div id="balance-list"></div>
+        </div>
+        <!-- History -->
+        <div class="card">
+          <div class="sec-title" style="margin-bottom:12px">Payment History</div>
+          <div id="payment-history"></div>
+        </div>
+    </div>
+
+  </div><!-- /inner -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ── MODAL: Log Session ── -->
+<div class="modal-bg" id="modal-log" style="display:none">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log Session — <span id="log-date-txt"></span></div>
+    <div id="log-student-list"></div>
+    <div style="margin-top:12px">
+      <button class="btn btn-outline" onclick="closeModal('modal-log')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add Student ── -->
+<div class="modal-bg" id="modal-student" style="display:none">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Student</div>
+    <div class="field"><label class="field-label">Full Name</label><input type="text" class="field-input" id="ns-name" placeholder="Student name"></div>
+    <div class="fields-row">
+      <div class="field"><label class="field-label">Rate per Session</label><input type="number" class="field-input" id="ns-rate" placeholder="0.00"></div>
+      <div class="field"><label class="field-label">Currency</label>
+        <select class="field-input" id="ns-currency">
+          <option>USD</option><option>EUR</option><option>GBP</option>
+          <option>PHP</option><option>SGD</option><option>AUD</option><option>CAD</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="btn-save-student">Save Student</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-student')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Invoice ── -->
+<div class="modal-bg" id="modal-invoice" style="display:none">
+  <div class="modal-sheet" style="max-width:680px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Invoice — <span id="inv-name"></span></div>
+    <div id="inv-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" id="btn-print-invoice">🖨️ Print / Save PDF</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-invoice')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+const LS={
+  get:k=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch{return null}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
+};
+
+let students = LS.get('tt3_students')||[];
+let sessions  = LS.get('tt3_sessions') ||[];
+let payments  = LS.get('tt3_payments') ||[];
+let dark = LS.get('tt3_dark')||false;
+
+const genId = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2);
+const today = ()=>new Date().toISOString().split('T')[0];
+const fmtCur = (n,c='USD')=>new Intl.NumberFormat('en-US',{style:'currency',currency:c}).format(n);
+const fmtDateLong = d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+const fmtDateShort = d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+// Auto-save debounced
+let saveTimer=null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    LS.set('tt3_students',students);
+    LS.set('tt3_sessions',sessions);
+    LS.set('tt3_payments',payments);
+    const b=document.getElementById('save-badge');
+    b.style.display='block';setTimeout(()=>b.style.display='none',1800);
+  },500);
+}
+
+// ═══════════════════════════════════════════════
+// DARK MODE
+// ═══════════════════════════════════════════════
+function applyDark(on){
+  document.documentElement.setAttribute('data-theme',on?'dark':'light');
+  document.getElementById('btn-dark').textContent=on?'☀️':'🌙';
+  document.querySelector('meta[name="theme-color"]').content=on?'#17152a':'#7c6dfa';
+  LS.set('tt3_dark',on);
+}
+applyDark(dark);
+document.getElementById('btn-dark').addEventListener('click',()=>{dark=!dark;applyDark(dark);});
+
+// ═══════════════════════════════════════════════
+// WAKE LOCK
+// ═══════════════════════════════════════════════
+let wl=null;
+document.getElementById('btn-wake').addEventListener('click',async()=>{
+  if(wl){await wl.release();wl=null;document.getElementById('btn-wake').textContent='☕';toast('Screen lock re-enabled','');return;}
+  if(!('wakeLock'in navigator)){toast('Wake Lock not supported on this browser','warn');return;}
+  try{
+    wl=await navigator.wakeLock.request('screen');
+    wl.addEventListener('release',()=>{wl=null;document.getElementById('btn-wake').textContent='☕';});
+    document.getElementById('btn-wake').textContent='🔆';
+    toast('☕ Screen will stay awake','ok');
+  }catch{toast('Could not enable wake lock','warn');}
+});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&wl)try{wl=await navigator.wakeLock.request('screen');}catch{}});
+
+// ═══════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════
+document.getElementById('btn-notif').addEventListener('click',async()=>{
+  if(!('Notification'in window)){toast('Notifications not supported','warn');return;}
+  if(Notification.permission==='granted'){toast('Notifications already enabled ✓','ok');return;}
+  const p=await Notification.requestPermission();
+  if(p==='granted'){toast('🔔 Notifications enabled!','ok');new Notification('TutorTrack',{body:'Background reminders active'});}
+  else toast('Notifications blocked in browser settings','warn');
+});
+function pushNotif(t,b){if(Notification.permission==='granted')new Notification(t,{body:b});}
+setInterval(()=>{
+  const u=sessions.filter(s=>s.payment_status==='UNPAID').length;
+  if(u>0&&Notification.permission==='granted'&&document.hidden)
+    pushNotif('TutorTrack',`${u} unpaid session${u>1?'s':''} pending`);
+},3600000);
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer=null;
+function toast(msg,type){
+  clearTimeout(toastTimer);
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show'+(type?' '+type:'');
+  toastTimer=setTimeout(()=>el.className='',2800);
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    const id='panel-'+btn.dataset.tab;
+    document.getElementById(id).classList.add('active');
+    if(btn.dataset.tab==='students')renderStudents();
+    if(btn.dataset.tab==='payments')renderPayments();
+    if(btn.dataset.tab==='calendar')renderCalendar();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════
+let calDate=new Date(); calDate.setDate(1);
+let selDate=today();
+
+function renderCalendar(){
+  const yr=calDate.getFullYear(), mo=calDate.getMonth();
+  document.getElementById('cal-title').textContent=calDate.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('cal-sel-label').textContent=fmtDateShort(selDate);
+
+  // DOW headers
+  const dow=document.getElementById('cal-dow');
+  dow.innerHTML=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow-cell">${d}</div>`).join('');
+
+  // Days
+  const grid=document.getElementById('cal-days');
+  grid.innerHTML='';
+  const firstDow=new Date(yr,mo,1).getDay();
+  const daysInMo=new Date(yr,mo+1,0).getDate();
+  for(let i=0;i<firstDow;i++){const e=document.createElement('div');grid.appendChild(e);}
+  for(let d=1;d<=daysInMo;d++){
+    const ds=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasDot=sessions.some(s=>s.session_date===ds);
+    const btn=document.createElement('button');
+    btn.className='cal-day'+(ds===today()?' today':'')+(ds===selDate?' selected':'')+(hasDot?' has-dot':'');
+    btn.textContent=d;
+    btn.addEventListener('click',()=>{selDate=ds;renderCalendar();});
+    grid.appendChild(btn);
+  }
+
+  renderSessionsPane();
+}
+
+function renderSessionsPane(){
+  document.getElementById('sessions-date-title').textContent=fmtDateShort(selDate);
+  document.getElementById('sessions-date-sub').textContent=new Date(selDate+'T12:00:00').toLocaleDateString('en-US',{year:'numeric'});
+  const ds=sessions.filter(s=>s.session_date===selDate);
+  const c=document.getElementById('sessions-list');
+  if(ds.length===0){c.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No sessions on this date</div></div>';return;}
+  c.innerHTML=ds.map(s=>{
+    const st=students.find(t=>t.student_id===s.student_id);
+    return`<div class="session-card">
+      <div style="flex:1">
+        <div class="session-name">${st?.student_name||'Unknown'}</div>
+        <div class="session-meta">🕐 ${s.session_time} &nbsp;·&nbsp; ${fmtCur(s.rate_at_time,st?.currency)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge ${s.payment_status==='PAID'?'badge-paid':'badge-unpaid'}">${s.payment_status==='PAID'?'✓ Paid':'○ Unpaid'}</span>
+        <button class="btn-icon" onclick="deleteSession('${s.session_id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('cal-prev').addEventListener('click',()=>{calDate.setMonth(calDate.getMonth()-1);renderCalendar();});
+document.getElementById('cal-next').addEventListener('click',()=>{calDate.setMonth(calDate.getMonth()+1);renderCalendar();});
+document.getElementById('btn-today').addEventListener('click',()=>{selDate=today();calDate=new Date();calDate.setDate(1);renderCalendar();});
+
+document.getElementById('btn-log-session').addEventListener('click',()=>{
+  const active=students.filter(s=>s.is_active);
+  if(!active.length){toast('Add a student first!','warn');return;}
+  document.getElementById('log-date-txt').textContent=fmtDateShort(selDate);
+  document.getElementById('log-student-list').innerHTML=active.map(s=>
+    `<button onclick="logFor('${s.student_id}')" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-main);min-height:var(--tap);color:var(--text);transition:border-color .15s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <span style="font-size:15px;font-weight:700">${s.student_name}</span>
+      <span style="font-size:13px;color:var(--muted);font-family:var(--font-mono)">${fmtCur(s.rate_per_session,s.currency)}</span>
+    </button>`
+  ).join('');
+  openModal('modal-log');
+});
+
+function logFor(sid){
+  const s=students.find(st=>st.student_id===sid);if(!s)return;
+  sessions.push({session_id:genId(),student_id:sid,session_date:selDate,session_time:new Date().toTimeString().slice(0,5),rate_at_time:s.rate_per_session,payment_status:'UNPAID'});
+  save();closeModal('modal-log');renderCalendar();
+  pushNotif('Session Logged',`${s.student_name} — ${selDate}`);
+  toast(`✓ Session logged for ${s.student_name}`,'ok');
+}
+
+function deleteSession(id){
+  if(!confirm('Delete this session?'))return;
+  sessions=sessions.filter(s=>s.session_id!==id);save();renderCalendar();
+}
+
+// ═══════════════════════════════════════════════
+// STUDENTS
+// ═══════════════════════════════════════════════
+function getStats(sid){
+  const ss=sessions.filter(s=>s.student_id===sid);
+  return{
+    total:ss.length,
+    paid:ss.filter(s=>s.payment_status==='PAID').length,
+    unpaid:ss.filter(s=>s.payment_status==='UNPAID').length,
+    balance:ss.filter(s=>s.payment_status==='UNPAID').reduce((a,s)=>a+s.rate_at_time,0)
+  };
+}
+
+function renderStudents(){
+  const active=students.filter(s=>s.is_active);
+  document.getElementById('students-title').textContent=`Students (${active.length})`;
+  const c=document.getElementById('student-cards');
+  if(!active.length){c.innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">No students yet. Add your first!</div></div>';return;}
+  c.innerHTML=active.map(s=>{
+    const st=getStats(s.student_id);
+    return`<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:17px;font-weight:800">${s.student_name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--font-mono)">${fmtCur(s.rate_per_session,s.currency)} per session</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" style="width:auto" onclick="showInvoice('${s.student_id}')">📄 Invoice</button>
+          <button class="btn-icon btn-sm" onclick="archiveStudent('${s.student_id}')">🗑️</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num" style="color:var(--accent)">${st.total}</div><div class="stat-label">Total</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--green)">${st.paid}</div><div class="stat-label">Paid</div></div>
+        <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${st.unpaid}</div><div class="stat-label">Unpaid</div></div>
+      </div>
+      ${st.balance>0?`<div class="balance-pill"><span class="balance-label">Balance Due</span><span class="balance-val">${fmtCur(st.balance,s.currency)}</span></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('btn-add-student').addEventListener('click',()=>openModal('modal-student'));
+document.getElementById('btn-save-student').addEventListener('click',()=>{
+  const name=document.getElementById('ns-name').value.trim();
+  const rate=parseFloat(document.getElementById('ns-rate').value);
+  const currency=document.getElementById('ns-currency').value;
+  if(!name||!rate){toast('Name and rate are required','warn');return;}
+  students.push({student_id:genId(),student_name:name,rate_per_session:rate,currency,is_active:true});
+  save();closeModal('modal-student');
+  document.getElementById('ns-name').value='';document.getElementById('ns-rate').value='';
+  renderStudents();toast(`✓ ${name} added`,'ok');
+});
+function archiveStudent(id){if(!confirm('Archive this student?'))return;students=students.map(s=>s.student_id===id?{...s,is_active:false}:s);save();renderStudents();}
+
+// ═══════════════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════════════
+function renderPayments(){
+  const active=students.filter(s=>s.is_active);
+  document.getElementById('pay-student').innerHTML='<option value="">Select student...</option>'+active.map(s=>`<option value="${s.student_id}">${s.student_name}</option>`).join('');
+  document.getElementById('pay-date').value=today();
+
+  // Outstanding
+  const bl=document.getElementById('balance-list');
+  const owed=active.filter(s=>getStats(s.student_id).balance>0);
+  if(!owed.length){bl.innerHTML='<div style="color:var(--green);font-size:13px;font-weight:700;padding:8px 0">✓ All balances clear</div>';}
+  else bl.innerHTML=owed.map(s=>`<div class="owed-row"><span style="font-weight:700;font-size:14px">${s.student_name}</span><span style="font-family:var(--font-mono);font-weight:800;font-size:14px;color:var(--amber)">${fmtCur(getStats(s.student_id).balance,s.currency)}</span></div>`).join('');
+
+  // History
+  const ph=document.getElementById('payment-history');
+  const sorted=[...payments].sort((a,b)=>new Date(b.payment_date)-new Date(a.payment_date));
+  if(!sorted.length){ph.innerHTML='<div class="empty" style="padding:16px 0"><div class="empty-icon" style="font-size:28px">💳</div><div class="empty-text">No payments yet</div></div>';return;}
+  ph.innerHTML=sorted.map(p=>{
+    const s=students.find(st=>st.student_id===p.student_id);
+    return`<div class="pay-item">
+      <div>
+        <div style="font-weight:700;font-size:14px">${s?.student_name||'Unknown'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${new Date(p.payment_date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:var(--font-mono);font-weight:800;font-size:15px;color:var(--green)">${fmtCur(p.amount_paid,s?.currency)}</span>
+        <button class="btn-icon" onclick="deletePayment('${p.payment_id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('btn-add-payment').addEventListener('click',()=>{
+  const sid=document.getElementById('pay-student').value;
+  const amount=parseFloat(document.getElementById('pay-amount').value);
+  const date=document.getElementById('pay-date').value;
+  if(!sid||!amount){toast('Student and amount required','warn');return;}
+  const s=students.find(st=>st.student_id===sid);
+  const unpaid=sessions.filter(se=>se.student_id===sid&&se.payment_status==='UNPAID').sort((a,b)=>new Date(a.session_date)-new Date(b.session_date));
+  const toPay=Math.floor(amount/s.rate_per_session);
+  const ids=new Set(unpaid.slice(0,toPay).map(se=>se.session_id));
+  sessions=sessions.map(se=>ids.has(se.session_id)?{...se,payment_status:'PAID'}:se);
+  payments.push({payment_id:genId(),student_id:sid,amount_paid:amount,payment_date:date||today()});
+  save();document.getElementById('pay-amount').value='';renderPayments();
+  toast(`✓ Payment recorded for ${s.student_name}`,'ok');
+  pushNotif('Payment Recorded',`${fmtCur(amount,s.currency)} from ${s.student_name}`);
+});
+
+function deletePayment(id){
+  if(!confirm('Delete payment? Sessions will be recalculated.'))return;
+  const p=payments.find(p=>p.payment_id===id);if(!p)return;
+  payments=payments.filter(p=>p.payment_id!==id);
+  sessions=sessions.map(s=>s.student_id===p.student_id?{...s,payment_status:'UNPAID'}:s);
+  const s=students.find(st=>st.student_id===p.student_id);
+  payments.filter(p2=>p2.student_id===p.student_id).sort((a,b)=>new Date(a.payment_date)-new Date(b.payment_date)).forEach(p2=>{
+    const up=sessions.filter(se=>se.student_id===p.student_id&&se.payment_status==='UNPAID').sort((a,b)=>new Date(a.session_date)-new Date(b.session_date));
+    const tp=Math.floor(p2.amount_paid/s.rate_per_session);
+    const ids=new Set(up.slice(0,tp).map(se=>se.session_id));
+    sessions=sessions.map(se=>ids.has(se.session_id)?{...se,payment_status:'PAID'}:se);
+  });
+  save();renderPayments();
+}
+
+// ═══════════════════════════════════════════════
+// INVOICE — Professional Print Layout
+// ═══════════════════════════════════════════════
+let currentInvoiceStudent=null;
+
+function showInvoice(sid){
+  const s=students.find(st=>st.student_id===sid);
+  currentInvoiceStudent=s;
+  const ss=sessions.filter(se=>se.student_id===sid).sort((a,b)=>new Date(a.session_date)-new Date(b.session_date));
+  const ps=payments.filter(p=>p.student_id===sid);
+  const subtotal=ss.reduce((a,se)=>a+se.rate_at_time,0);
+  const totalPaid=ps.reduce((a,p)=>a+p.amount_paid,0);
+  const balance=ss.filter(se=>se.payment_status==='UNPAID').reduce((a,se)=>a+se.rate_at_time,0);
+
+  document.getElementById('inv-name').textContent=s.student_name;
+
+  // Group by month
+  const byMonth={};
+  ss.forEach(se=>{
+    const k=new Date(se.session_date).toLocaleDateString('en-US',{year:'numeric',month:'long'});
+    if(!byMonth[k])byMonth[k]=[];byMonth[k].push(se);
+  });
+
+  // In-app invoice view
+  let html=`<div style="background:var(--surface2);border-radius:12px;padding:16px 18px;margin-bottom:16px;border:1px solid var(--border)">
+    <div style="font-size:15px;font-weight:800">${s.student_name}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">Rate: ${fmtCur(s.rate_per_session,s.currency)} per session &nbsp;·&nbsp; Generated: ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+  </div>`;
+
+  Object.entries(byMonth).forEach(([month,mss])=>{
+    html+=`<div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between">
+        <span>${month}</span><span>${mss.length} session${mss.length>1?'s':''}</span>
+      </div>`;
+    mss.forEach(se=>{
+      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span style="color:var(--text2)">${fmtDateShort(se.session_date)} <span style="color:var(--muted);font-family:var(--font-mono);font-size:11px">${se.session_time}</span></span>
+        <span style="display:flex;align-items:center;gap:10px">
+          <span style="font-family:var(--font-mono);font-weight:600">${fmtCur(se.rate_at_time,s.currency)}</span>
+          <span class="badge ${se.payment_status==='PAID'?'badge-paid':'badge-unpaid'}">${se.payment_status==='PAID'?'✓ Paid':'○ Unpaid'}</span>
+        </span>
+      </div>`;
+    });
+    html+='</div>';
+  });
+
+  html+=`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-top:4px">
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Total Sessions</span><span style="font-weight:700">${ss.length}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Subtotal</span><span style="font-weight:700;font-family:var(--font-mono)">${fmtCur(subtotal,s.currency)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--green)">Payments Received</span><span style="font-weight:700;font-family:var(--font-mono);color:var(--green)">−${fmtCur(totalPaid,s.currency)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:12px 0 4px;font-size:17px;font-weight:800"><span>Balance Due</span><span style="color:var(--accent);font-family:var(--font-mono)">${fmtCur(balance,s.currency)}</span></div>
+  </div>`;
+
+  document.getElementById('inv-body').innerHTML=html;
+
+  // Build the PRINT version too
+  buildPrintInvoice(s,ss,ps,byMonth,subtotal,totalPaid,balance);
+
+  openModal('modal-invoice');
+}
+
+function buildPrintInvoice(s,ss,ps,byMonth,subtotal,totalPaid,balance){
+  // Clean professional PDF layout — no app chrome, no borders, pure typography
+  let pi=`
+  <style>
+    .pi-page{width:100%;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#1a1728;font-size:13px;line-height:1.5}
+    .pi-logo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#9290a8;margin-bottom:32px}
+    .pi-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:28px;border-bottom:2px solid #1a1728}
+    .pi-client{font-size:26px;font-weight:800;margin-bottom:6px;color:#1a1728}
+    .pi-client-sub{font-size:13px;color:#4a4568}
+    .pi-meta{text-align:right}
+    .pi-inv-num{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9290a8;margin-bottom:4px}
+    .pi-inv-val{font-size:15px;font-weight:700;font-family:var(--font-mono)}
+    .pi-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#9290a8;margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid #e4e1f5}
+    .pi-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0effe;font-size:13px}
+    .pi-row:last-child{border-bottom:none}
+    .pi-row-date{color:#4a4568}
+    .pi-row-time{color:#9290a8;font-family:var(--font-mono);font-size:11px;margin-left:8px}
+    .pi-row-amt{font-family:var(--font-mono);font-weight:600}
+    .pi-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.05em}
+    .pi-paid{background:#d1fae5;color:#059669}
+    .pi-unpaid{background:#fef3c7;color:#d97706}
+    .pi-totals{margin-top:32px;border-top:2px solid #1a1728;padding-top:20px}
+    .pi-total-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+    .pi-total-row span:last-child{font-family:var(--font-mono);font-weight:600}
+    .pi-balance{display:flex;justify-content:space-between;padding:16px 0 0;margin-top:12px;border-top:1px solid #e4e1f5;font-size:20px;font-weight:800}
+    .pi-balance span:last-child{font-family:var(--font-mono);color:#7c6dfa}
+    .pi-footer{margin-top:48px;padding-top:16px;border-top:1px solid #e4e1f5;font-size:11px;color:#9290a8;text-align:center}
+  </style>
+  <div class="pi-page">
+    <div class="pi-logo">📚 TutorTrack</div>
+    <div class="pi-top">
+      <div>
+        <div class="pi-client">${s.student_name}</div>
+        <div class="pi-client-sub">${fmtCur(s.rate_per_session,s.currency)} per session &nbsp;·&nbsp; ${s.currency}</div>
+      </div>
+      <div class="pi-meta">
+        <div class="pi-inv-num">Invoice Date</div>
+        <div class="pi-inv-val">${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+        <div class="pi-inv-num" style="margin-top:12px">Total Sessions</div>
+        <div class="pi-inv-val">${ss.length}</div>
+      </div>
+    </div>`;
+
+  Object.entries(byMonth).forEach(([month,mss])=>{
+    pi+=`<div class="pi-section-title">${month} &nbsp;—&nbsp; ${mss.length} session${mss.length>1?'s':''}</div>`;
+    mss.forEach(se=>{
+      pi+=`<div class="pi-row">
+        <div><span class="pi-row-date">${fmtDateShort(se.session_date)}</span><span class="pi-row-time">${se.session_time}</span></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="pi-row-amt">${fmtCur(se.rate_at_time,s.currency)}</span>
+          <span class="pi-pill ${se.payment_status==='PAID'?'pi-paid':'pi-unpaid'}">${se.payment_status==='PAID'?'PAID':'UNPAID'}</span>
+        </div>
+      </div>`;
+    });
+  });
+
+  pi+=`<div class="pi-totals">
+    <div class="pi-total-row"><span>Subtotal (${ss.length} sessions)</span><span>${fmtCur(subtotal,s.currency)}</span></div>
+    <div class="pi-total-row" style="color:#059669"><span>Payments Received</span><span>− ${fmtCur(totalPaid,s.currency)}</span></div>
+    <div class="pi-balance"><span>Balance Due</span><span>${fmtCur(balance,s.currency)}</span></div>
+  </div>
+  <div class="pi-footer">Generated by TutorTrack &nbsp;·&nbsp; ${new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'})}</div>
+  </div>`;
+
+  document.getElementById('pi-content').innerHTML=pi;
+}
+
+document.getElementById('btn-print-invoice').addEventListener('click',()=>{
+  closeModal('modal-invoice');
+  setTimeout(()=>window.print(),150);
+});
+
+// ═══════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════
+function openModal(id){document.getElementById(id).style.display='flex';}
+function closeModal(id){document.getElementById(id).style.display='none';}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id);}));
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderCalendar();
+if(!LS.get('tt3_intro')){
+  LS.set('tt3_intro',true);
+  setTimeout(()=>toast('👋 Welcome! Add your first student to get started.',''),800);
+}
+</script>
+</body>
+</html>
